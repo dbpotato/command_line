@@ -1,3 +1,4 @@
+/*
 Copyright (c) 2017 Adam Kaniewski
 
 Permission is hereby granted, free of charge, to any person obtaining
@@ -18,3 +19,32 @@ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
 LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
+
+#ifndef CMD_CLIENT_H
+#define CMD_CLIENT_H
+
+/**
+ * Basic network client for sending messages to command line's server
+ */
+
+class CmdClient {
+private:
+  int _socket; ///< server connection socket
+public:
+  CmdClient();
+  ~CmdClient();
+  /**
+   * Try to exectue callback. Prints warrning if none has been found under specified name
+   *
+   * \param port server's listening port
+   * \param host server's location
+   * */
+  bool Connect(int port, const char* host = "localhost");
+  /**
+   * Endles loop for receving commands from standard input and sending them to server
+   */
+  void Run();
+};
+
+#endif //CMD_CLIENT_H

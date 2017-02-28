@@ -1,11 +1,11 @@
 # Command Line Library
 
-Command Line is **c++ linux library** which gives you a fast solution if you need
-to call parts of your code during application execution. Do that by just typing
-name of your function an arguments. This is most usefull
-for early testing and debugging. It can operate in the same console as your 
-application or / and as a network server. It's easy to integerate into your
-existing code.
+Command Line is **c++ linux library** which gives you a fast solution
+if you need to call parts of your code during application execution. 
+Do that by just typing name of your function an arguments.
+This is most usefull for early testing and debugging.
+It can operate in the same console as your application 
+or/and as a network server. It's easy to integerate into your existing code.
 
 # Building
 
@@ -16,10 +16,11 @@ Output files will be placed in "bin_compilator_name" directory:
   - **test** - example of basic integration
   - **cmd_client** - network client 
 
-## Integration
+# Integration
 
-You should be able to integrate Command Line with your existing code by editing one 
-of your source files. Take a look at wrapper_and_usage_example.cpp
+You should be able to integrate Command Line with your existing code
+by editing one  of your source files.
+Take a look at wrapper_and_usage_example.cpp
 What you need is :
   - CmdLine library wrpapper 
   - wrapper initialisation 
@@ -27,7 +28,7 @@ What you need is :
 
 In result you should end up with your functions being registered as commands.
 
-### Usage
+# Usage
 
 Copy libcmdline.so to your other libraries or set LD_LIBRARY_PATH environment variable.
 
@@ -41,4 +42,5 @@ sucesfully you can run **cmd_client** ([server location] port). Your commands ty
 be sent to your application.
 
 # Licence
+
 MIT

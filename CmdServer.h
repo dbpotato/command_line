@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2017 Adam Kaniewski
+Copyright (c) 2018 Adam Kaniewski
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -21,52 +21,71 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef COMMAND_SERVER_H
-#define COMMAND_SERVER_H
 
-#include "PosixThread.h"
+#pragma once
+
+#include "Message.h"
+#include "Client.h"
+#include "Server.h"
 
 class CommandLine;
-struct timeval;
+class Conncection;
 
 /**
- * Simple server that accept single client connection
+ * Network server for receving commands from external clients
  */
-class CmdServer {
+class CmdServer : public std::enable_shared_from_this<CmdServer>
+                , public ClientManager
+                , public ServerManager {
 public:
   /**
-   * class constructor
-   * \param cmd_line owner
+   * Constructor
+   * \param cmd_line owner instance
    */
-  CmdServer(CommandLine* cmd_line);
-  ~CmdServer();
+  CmdServer(std::weak_ptr<CommandLine> cmd_line);
+
   /**
-   * Tries to start listening on specified port
-   * \param port port number
-   * \return true if server succesfully started listening for connection
+   * Tries to start lisntening for connections
+   * \param port listening port
+   * \return true on success
    */
   bool Start(int port);
-protected:
-  CommandLine* _cmd_line; ///<parent object
-  /**
-   * Checks if there is data to read from socket
-   *
-   * \param socket handler to check
-   * \param timeout max waiting time
-   * \return returns true if read can be made
-   */
-  bool IsSocketReady(int socket, timeval timeout);
-private:
-  PosixThread _run_thread;  ///< thread for listening for connection
-  /**
-   * Awaits for connection and recevies commands from client
-   * \param  thread PosixThread object
-   * \return returns NULL at exit
-   */
-  static void* Run(void* thread);
-  int _sock_listen; ///<socket handle for client connection
-  int _sock_read; ///<socket handle for receiving data
-  bool _started; ///<prevents from straring server for a second time
-};
 
-#endif //COMMAND_SERVER_H
+  /**
+   * Pass string to connected clietns
+   * \param str string to send
+   */
+  void PassLog(const std::string& str);
+
+  /**
+   * Implements ServerManager
+   */
+  void OnClientConnected(std::shared_ptr<Client> client) override;
+
+  /**
+   * Implements ClientManager
+   */
+  void OnClientRead(std::shared_ptr<Client> client, std::shared_ptr<Message> msg) override;
+
+  /**
+   * Implements ClientManager
+   */
+  void OnClientClosed(std::shared_ptr<Client> client) override;
+  /**
+   * Implements ClientManager
+   */
+  void OnMsgSent(std::shared_ptr<Client> client, std::shared_ptr<Message> msg, bool success) override {}
+
+  /**
+   * Passes recevied command to CommandLine
+   * \param msg received network message
+   */
+  void PassCommand(std::shared_ptr<Message> msg);
+
+private:
+  std::weak_ptr<CommandLine> _cmd_line; ///< owner instance
+  size_t _client_id_counter; ///< client id counter
+  std::shared_ptr<Server> _server; ///< network server instance
+  std::map<size_t, std::shared_ptr<Client> > _clients; ///< connected network clients
+  std::shared_ptr<Connection> _connection; ///< network connection instance
+};

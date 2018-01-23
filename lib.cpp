@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2017 Adam Kaniewski
+Copyright (c) 2018 Adam Kaniewski
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -21,34 +21,33 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#include <vector>
-#include <string>
 #include "CommandLine.h" 
 
-CommandLine* g_cmdLine = NULL;
+std::shared_ptr<CommandLine> g_cmdLine;
 
-extern "C" void cmdl_create(void* funcObj) {
-  if(g_cmdLine)
-    delete g_cmdLine;
-
-  g_cmdLine = new CommandLine(funcObj);
+extern "C" void cmdl_create() {
+  g_cmdLine.reset(new CommandLine());
 }
 
 extern "C" void cmdl_destroy() {
-  if(g_cmdLine) {
-    delete g_cmdLine;
-    g_cmdLine = NULL;
-  }
+  g_cmdLine.reset();
 }
 
-extern "C" void cmdl_add(std::string& name, callback_func callback) {
+extern "C" bool cmdl_add(const std::string& name, callback_func callback, void* obj) {
   if(g_cmdLine)
-    g_cmdLine->AddCommand(name, callback);
+    return g_cmdLine->AddCommand(name, callback, obj);
+
+  return false;
 }
 
 extern "C" void cmdl_set_log_func(void(*log_func)(const char*)) {
   if(g_cmdLine)
     g_cmdLine->SetLogger(log_func);
+}
+
+extern "C" void cmdl_log(const char* format) {
+  if(g_cmdLine)
+    g_cmdLine->LogExt(format);
 }
 
 extern "C" void cmdl_run_local() {

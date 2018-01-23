@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2017 Adam Kaniewski
+Copyright (c) 2018 Adam Kaniewski
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -21,50 +21,23 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#include <cstdio>
-#include "PosixThread.h"
+#pragma once
 
-PosixThread::PosixThread()
-    : _thread_func(NULL)
-    , _thread_obj(NULL)
-    , _exists(false)
-    , _run_thread(false) {
-  pthread_mutex_init(&_run_flag_mutex, NULL);
-}
+/**
+* Helper class for defining network messages types
+* */
+class MessageType {
+public:
+  enum Type {
+    UNKNOWN = 0,
+    YOU_SHOULD_KNOW_THAT,
+    COMMAND,
+    END
+  };
 
-PosixThread::~PosixThread() {
-  pthread_mutex_destroy(&_run_flag_mutex);
-}
-
-void PosixThread::Run(void*(*thread_func)(void*), void* obj) {
-  if(!_exists) {
-    _exists = true;
-    _thread_func = thread_func;
-    _thread_obj = obj;
-    _run_thread = true;
-    pthread_create(&_thread, NULL, thread_func, this);
+  static Type TypeFromInt(uint8_t type) {
+    if(type < Type::END)
+      return (Type) type;
+    return Type::UNKNOWN;
   }
-}
-
-void* PosixThread::GetObj() {
-  return _thread_obj;
-}
-
-void PosixThread::Stop() {
-  pthread_mutex_lock(&_run_flag_mutex);
-  _run_thread = false;
-  pthread_mutex_unlock(&_run_flag_mutex);
-}
-
-bool PosixThread::IsRunning() {
-  bool running = false;
-  pthread_mutex_lock(&_run_flag_mutex);
-  running = _run_thread;
-  pthread_mutex_unlock(&_run_flag_mutex);
-  return running;
-}
-
-void PosixThread::Join() {
-  if(_exists)
-    pthread_join(_thread, NULL);
-}
+};

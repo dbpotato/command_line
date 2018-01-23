@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2017 Adam Kaniewski
+Copyright (c) 2018 Adam Kaniewski
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -21,30 +21,49 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef CMD_CLIENT_H
-#define CMD_CLIENT_H
+#pragma once
+
+#include "Client.h"
+
+class Conncection;
 
 /**
- * Basic network client for sending messages to command line's server
+ * Basic network client for sending messages to CmdServer
+ * and receving response.
  */
-
-class CmdClient {
-private:
-  int _socket; ///< server connection socket
+class CmdClient : public std::enable_shared_from_this<CmdClient>, public ClientManager {
 public:
   CmdClient();
-  ~CmdClient();
+
   /**
-   * Try to exectue callback. Prints warrning if none has been found under specified name
-   *
+   * Implements ClientManager
+   */
+  void OnClientRead(std::shared_ptr<Client> client, std::shared_ptr<Message> msg) override;
+
+  /**
+   * Implements ClientManager
+   */
+  void OnClientClosed(std::shared_ptr<Client> client) override;
+
+  /**
+   * Implements ClientManager
+   */
+  void OnMsgSent(std::shared_ptr<Client> client, std::shared_ptr<Message> msg, bool success) override;
+
+  /**
+   * Tries to connect to CmdServer
    * \param port server's listening port
-   * \param host server's location
-   * */
+   * \param host server's url
+   * \return true if connected successfully
+   */
   bool Connect(int port, const char* host = "localhost");
+
   /**
-   * Endles loop for receving commands from standard input and sending them to server
+   * Starts endless async loop for reading input from console
    */
   void Run();
-};
 
-#endif //CMD_CLIENT_H
+private:
+  std::shared_ptr<Client> _client; ///< network client instance
+  std::shared_ptr<Connection> _connection; ///< network connection instance
+};

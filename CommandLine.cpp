@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2017 Adam Kaniewski
+Copyright (c) 2018 Adam Kaniewski
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -21,15 +21,13 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <cstdarg>
-#include <iostream>
-#include <sstream>
-
 #include "CommandLine.h"
 #include "CmdServer.h"
 
+#include <cstdarg>
+#include <iostream>
+#include <sstream>
+#include <unistd.h>
 
 bool CommandLine::CanReadFormInput() {
   fd_set rfds;
@@ -40,18 +38,15 @@ bool CommandLine::CanReadFormInput() {
   timeout.tv_sec = 1;
   timeout.tv_usec = 0;
 
-  return select(STDIN_FILENO +1, &rfds, NULL, NULL, &timeout) > 0;
+  return select(STDIN_FILENO +1, &rfds, nullptr, nullptr, &timeout) > 0;
 }
 
-void* CommandLine::Reader(void* thread) {
-  PosixThread* posix_thread = (PosixThread*)thread;
-  CommandLine* cmd = (CommandLine*) posix_thread->GetObj();
+void CommandLine::OnThreadStarted(int thread_id) {
   std::string input_line;
-
-  while(posix_thread->IsRunning())
-    if(cmd->CanReadFormInput())
+  while(_local_reader.ShouldRun())
+    if(CanReadFormInput())
       if(std::getline(std::cin, input_line))
-        cmd->ProcessLine(input_line);
+        ProcessLine(input_line);
 }
 
 void CommandLine::ProcessLine(const std::string& line) {
@@ -70,71 +65,56 @@ void CommandLine::ProcessLine(const std::string& line) {
   CallCommand(command, args);
 }
 
-void CommandLine::Log(const char* format, ...) const {
-  size_t size = 1024;
-  char stackbuf[size];
-  std::vector<char> dynamicbuf;
-  char *buf = &stackbuf[0];
-  va_list ap, ap_copy;
-  std::string formated;
-
-  va_start (ap, format);
-
-  while (true) {
-    va_copy(ap_copy, ap);
-    int needed = vsnprintf (buf, size, format, ap);
-    va_end(ap_copy);
-
-    if (needed <= (int)size && needed >= 0) {
-      formated = std::string (buf, (size_t) needed);
-      break;
-    }
-
-    size = (needed > 0) ? (needed+1) : (size*2);
-    dynamicbuf.resize (size);
-    buf = &dynamicbuf[0];
-  }
-
-  va_end (ap);
-
-  if(_log)
-    _log(formated.c_str());
-  else
-    printf("%s",formated.c_str());
+std::string CommandLine::VsnprintfToStr(const char* format, va_list args) const {
+  va_list args2;
+  va_copy(args2, args);
+  std::vector<char> buf(1+std::vsnprintf(nullptr, 0, format, args));
+  std::vsnprintf(buf.data(), buf.size(), format, args2);
+  va_end(args2);
+  return std::string(buf.begin(),buf.end());
 }
 
-CommandLine::CommandLine(void* funcObj)
-    : _funcObj(funcObj)
-    , _cmd_server(NULL)
-    , _log(NULL) {
-  pthread_mutex_init(&_mutex, NULL);
+void CommandLine::Log(const char* format, ...) const {
+  va_list args;
+  va_start (args, format);
+  LogExt(VsnprintfToStr(format, args).c_str());
+  va_end (args);
+}
+
+void CommandLine::LogExt(const char* msg) const{
+  if(_log)
+    _log(msg);
+  else
+    printf("%s", msg);
+
+  if(_cmd_server)
+    _cmd_server->PassLog(msg);
+}
+
+CommandLine::CommandLine() : _log(nullptr) {
 }
 
 CommandLine::~CommandLine() {
   Log("CmdLine: Is shutting down...\n");
   _local_reader.Stop();
   _local_reader.Join();
-
-  if(_cmd_server)
-    delete _cmd_server;
 }
 
 void CommandLine::RunLocal() {
-  _local_reader.Run(&CommandLine::Reader, this);
+  _local_reader.Run(shared_from_this());
   Log("CmdLine: Started locally\n");
 }
 
 bool CommandLine::RunServer(int port) {
   if(!_cmd_server) {
-    _cmd_server = new CmdServer(this);
+    _cmd_server = std::make_shared<CmdServer>(shared_from_this());
     if(_cmd_server->Start(port)) {
       Log("CmdLine: Server started at port %d\n", port);
       return true;
     }
     else {
       Log("CmdLine: Server failed to start at port %d\n", port);
-      delete _cmd_server;
-      _cmd_server = NULL;
+      _cmd_server = nullptr;
       return false;
     }
   }
@@ -144,29 +124,34 @@ bool CommandLine::RunServer(int port) {
 }
 
 void CommandLine::CallCommand(const std::string& name, const std::vector<std::string>& args) {
-  callback_func callback = NULL;
+  callback_func callback = nullptr;
+  void* obj = nullptr;
 
-  std::map<std::string, callback_func>::iterator it;
-  it = _callbacks.find(name);
+  auto it = _callbacks.find(name);
 
-  if(it != _callbacks.end())
-    callback = it->second;
+  if(it ==_callbacks.end()) {
+    Log("CmdLine: Unknown Command : %s\n", name.c_str());
+    return;
+  }
+
+  callback = it->second.first;
+  obj = it->second.second;
 
   if(callback)
-    callback(args, _funcObj);
-  else
-    Log("CmdLine: Unknown Command : %s\n", name.c_str());
+    callback(args, obj);
 }
 
-void CommandLine::AddCommand(const std::string& name, callback_func callback) {
+bool CommandLine::AddCommand(const std::string& name, callback_func callback, void* obj) {
 
-  std::map<std::string, callback_func>::iterator it;
-  it = _callbacks.find(name);
+  auto it = _callbacks.find(name);
 
-  if(it != _callbacks.end())
-    it->second = callback;
-  else
-    _callbacks.insert(std::make_pair(name, callback));
+  if(it != _callbacks.end()) {
+    Log("CmdLine: Command already added : %s\n", name.c_str());
+    return false;
+  }
+
+  _callbacks.insert(std::make_pair(name, std::make_pair(callback, obj)));
+  return true;
 }
 
 void CommandLine::SetLogger(log_func log) {

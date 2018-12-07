@@ -4,7 +4,8 @@ set(CMAKE_SYSTEM_NAME Linux)
 
 set(COMMON_DIR "${PROJECT_SOURCE_DIR}/common")
 set(SRC_DIR "${PROJECT_SOURCE_DIR}")
-set(CMAKE_CXX_FLAGS "-fPIC -O2 -std=c++11")
+#set(CMAKE_CXX_FLAGS "-fPIC -O2 -std=c++11")
+set(CMAKE_CXX_FLAGS "-fPIC -g -std=c++11")
 set(DEFAULT_CXX "g++")
 
 if(DEFINED ENV{CXX})
@@ -30,6 +31,7 @@ include_directories(
 set(COMMON
   ${COMMON_DIR}/tools/net/Client.cpp
   ${COMMON_DIR}/tools/net/Server.cpp
+  ${COMMON_DIR}/tools/net/ServerImpl.cpp
   ${COMMON_DIR}/tools/net/Connection.cpp
   ${COMMON_DIR}/tools/net/Message.cpp
   ${COMMON_DIR}/tools/net/MessageBuilder.cpp
@@ -58,5 +60,5 @@ target_link_libraries(cmdline pthread)
 add_executable(example ${EXAMPLE})
 target_link_libraries(example pthread dl)
 
-add_executable(client ${CLIENT})
-target_link_libraries(client pthread)
+#add_executable(client ${CLIENT})
+#target_link_libraries(client pthread)

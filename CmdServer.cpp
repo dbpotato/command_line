@@ -35,11 +35,6 @@ CmdServer::CmdServer(std::weak_ptr<CommandLine> cmd_line)
     : _cmd_line(cmd_line) {
 }
 
-void CmdServer::OnClientConnected(std::shared_ptr<Client> client) {
-  _clients.insert(std::make_pair(++_client_id_counter, client));
-  client->Start(_client_id_counter, shared_from_this());
-}
-
 void CmdServer::OnClientRead(std::shared_ptr<Client> client, std::shared_ptr<Message> msg) {
   switch(MessageType::TypeFromInt(msg->_type)) {
     case MessageType::COMMAND:
@@ -53,8 +48,10 @@ void CmdServer::OnClientRead(std::shared_ptr<Client> client, std::shared_ptr<Mes
 void CmdServer::PassLog(const std::string& str) {
   if(str.size()) {
     auto msg = std::make_shared<Message>((uint8_t)MessageType::YOU_SHOULD_KNOW_THAT, str);
-    for(auto client_pair : _clients)
-      client_pair.second->Send(msg);
+    std::vector<std::shared_ptr<Client> > vec;
+    GetClients(vec);
+    for(auto client : vec)
+      client->Send(msg);
    }
 }
 
@@ -63,21 +60,3 @@ void CmdServer::PassCommand(std::shared_ptr<Message> msg) {
     cmdl->ProcessLine(msg->ToString());
 }
 
-void CmdServer::OnClientClosed(std::shared_ptr<Client> client) {
-  _clients.erase(client->GetId());
-}
-
-bool CmdServer::Start(int port) {
-  if(!_server) {
-    _connection = std::make_shared<Connection>();
-    _connection->Init();
-    _server = _connection->CreateServer(port);
-    if(!_server)
-      return false;
-    else {
-      _server->Init(shared_from_this());
-      return true;
-    }
-  }
-  return false;
-}

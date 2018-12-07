@@ -44,6 +44,7 @@ friend void CmdServer::PassCommand(std::shared_ptr<Message> msg);
 
 private:
   std::shared_ptr<CmdServer> _cmd_server; ///< server instance
+  std::shared_ptr<Connection> _connection; ///< connection interface used by CmdServer
   log_func _log; ///< custom log function
   std::map<std::string, std::pair<callback_func, void*> > _callbacks; ///< callback collection
   PosixThread _local_reader; ///< thread for reading input from local console

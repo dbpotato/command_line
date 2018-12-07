@@ -107,8 +107,11 @@ void CommandLine::RunLocal() {
 
 bool CommandLine::RunServer(int port) {
   if(!_cmd_server) {
+    _connection = std::make_shared<Connection>();
+    _connection->Init();
+
     _cmd_server = std::make_shared<CmdServer>(shared_from_this());
-    if(_cmd_server->Start(port)) {
+    if(_cmd_server->Init(port, _connection)) {
       Log("CmdLine: Server started at port %d\n", port);
       return true;
     }

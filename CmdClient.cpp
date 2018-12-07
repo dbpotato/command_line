@@ -61,7 +61,7 @@ bool CmdClient::Connect(int port, const char* host) {
   if(!_client)
     return false;
 
-  _client->Start(0, shared_from_this());
+  _client->Start(shared_from_this());
   return true;
 }
 

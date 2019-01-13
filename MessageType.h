@@ -32,6 +32,8 @@ public:
     UNKNOWN = 0,
     YOU_SHOULD_KNOW_THAT,
     COMMAND,
+    ARE_U_ALIVE,
+    I_AM_ALIVE,
     END
   };
 

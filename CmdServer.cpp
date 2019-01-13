@@ -40,6 +40,9 @@ void CmdServer::OnClientRead(std::shared_ptr<Client> client, std::shared_ptr<Mes
     case MessageType::COMMAND:
       PassCommand(msg);
       break;
+    case MessageType::ARE_U_ALIVE:
+      client->Send(std::make_shared<Message>((uint8_t)MessageType::I_AM_ALIVE));
+      break;
     default:
       break;
   }

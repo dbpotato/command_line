@@ -23,6 +23,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <unistd.h>
 #include <atomic>
+#include <sstream>
 
 
 #include "CmdWrapper.h"
@@ -45,11 +46,13 @@ void do_something(const std::vector<std::string>& args, void* obj) {
   AppObj* app_obj = (AppObj*)obj;
   app_obj->DoNothing();
   CmdLine& command_line = CmdLine::Instance();
+  std::stringstream msg;
   if(args.size()) {
-    command_line.Log("cmd command with args : ");
+    msg << "cmd command with args : ";
     for(size_t i = 0; i < args.size(); ++i)
-      command_line.Log("%s ", args.at(i).c_str());
-    command_line.Log("\n");
+      msg << args.at(i).c_str() << " ";
+    msg << "\n";
+    command_line.Log(msg.str().c_str());
   }
   else
     command_line.Log("cmd command \n");

@@ -24,6 +24,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #pragma once
 
 #include "Client.h"
+#include "ConnectionChecker.h"
 
 class Conncection;
 
@@ -31,7 +32,9 @@ class Conncection;
  * Basic network client for sending messages to CmdServer
  * and receving response.
  */
-class CmdClient : public std::enable_shared_from_this<CmdClient>, public ClientManager {
+class CmdClient : public std::enable_shared_from_this<CmdClient>
+                , public ClientManager
+                , public ConnectionKeeper{
 public:
   CmdClient();
 
@@ -48,22 +51,34 @@ public:
   /**
    * Implements ClientManager
    */
-  void OnMsgSent(std::shared_ptr<Client> client, std::shared_ptr<Message> msg, bool success) override;
+  void OnMsgSent(std::shared_ptr<Client> client, std::shared_ptr<Message> msg, bool success) override {;}
 
   /**
-   * Tries to connect to CmdServer
+   * Implementes ConnectionKeeper
+   */
+  void OnConnected(std::shared_ptr<Client> client) override;
+
+  /**
+   * Implementes ConnectionKeeper
+   */
+  void OnDisconnected() override;
+
+  /**
+   * Implementes ConnectionKeeper
+   */
+  void SendPing() override;
+
+  /**
+   * Tries to connect to CmdServer.
+   * Starts endless async loop for reading input from console
    * \param port server's listening port
    * \param host server's url
-   * \return true if connected successfully
    */
-  bool Connect(int port, const char* host = "localhost");
-
-  /**
-   * Starts endless async loop for reading input from console
-   */
-  void Run();
+  void Init(int port, const char* host = "localhost");
 
 private:
   std::shared_ptr<Client> _client; ///< network client instance
   std::shared_ptr<Connection> _connection; ///< network connection instance
+  std::shared_ptr<ConnectionChecker> _checker; ///< checker instance
+  std::mutex _client_mutex; ///< mutex for client modifications
 };

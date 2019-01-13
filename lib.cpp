@@ -26,7 +26,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 std::shared_ptr<CommandLine> g_cmdLine;
 
 extern "C" void cmdl_create() {
-  g_cmdLine.reset(new CommandLine());
+  if(!g_cmdLine)
+    g_cmdLine.reset(new CommandLine());
 }
 
 extern "C" void cmdl_destroy() {

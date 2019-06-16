@@ -1,5 +1,5 @@
 #[[
-Copyright (c) 2018 Adam Kaniewski
+Copyright (c) 2018 - 2019 Adam Kaniewski
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -56,6 +56,7 @@ set(COMMON
   ${COMMON_DIR}/tools/net/Client.cpp
   ${COMMON_DIR}/tools/net/Server.cpp
   ${COMMON_DIR}/tools/net/Connection.cpp
+  ${COMMON_DIR}/tools/net/Transporter.cpp
   ${COMMON_DIR}/tools/net/Message.cpp
   ${COMMON_DIR}/tools/net/MessageBuilder.cpp
   ${COMMON_DIR}/tools/thread/PosixThread.cpp
